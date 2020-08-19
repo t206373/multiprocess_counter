@@ -27,15 +27,17 @@ int main() {
 	int protection = PROT_READ | PROT_WRITE;
 	int visibility = MAP_SHARED | MAP_ANON;
 
-	int *shared;
-	shared = (int*) mmap(NULL, sizeof(int)*99999, protection, visibility, 0, 0);
+	int *shared, *check;
+	shared = (int*) mmap(NULL, sizeof(int)*999, protection, visibility, 0, 0);
+	check = (int*) mmap(NULL, sizeof(int)*999, protection, visibility, 0, 0);
 
-	int (*n), (*p), a = 2, b;
-	n = &(shared[0]),  p = &(shared[1]);
+	int n, (*p), a = 1, b;
+	p = &(shared[0]);
 	
 	do {	/*ESCREVENDO AS ENTRADAS NA MEMÓRIA COMPARTILHADA.*/
 		scanf("%d", &entry);
 		shared[a] = entry;
+		check[a] = 0;
 		a++;
 	}
 	while ((entry=getchar()) != '\n');
@@ -43,7 +45,7 @@ int main() {
 	(*p) = 1; /*SETANDO A QUANTIDADE DE PROCESSO INICIAL COMO 1(PROCESSO PAI).*/
 
 	
-	for (b = 2; b < a; b++) {	/*LOOP PARA LEITURA DAS ENTRADAS SALVOS NA MEMÓRIA COMPARTILHADA.*/
+	for (b = 1; b < a; b++) {	/*LOOP PARA LEITURA DAS ENTRADAS SALVOS NA MEMÓRIA COMPARTILHADA.*/
 		while (*p == 3) {	/*LIMITANDO A QUANTIDADE MÁXIMA DE PROCESSOS PARALELOS EM 4.*/
 			waitpid(-1, NULL , 0);
 			(*p)--;
@@ -51,8 +53,8 @@ int main() {
 		if (*p < 4) {	/*GERAÇÃO DE PROCESSOS FILHO PARA VERIFICAR NÚMEROS PRIMOS.*/
 			process[b] = fork();
 			(*p)++;
-			while (process[b] == 0) {
-				(*n) += primetest(shared[b]);
+			if (process[b] == 0) {
+				check[b] = primetest(shared[b]);
 				(*p)--;
 				exit(0);
 			}
@@ -62,6 +64,9 @@ int main() {
 		waitpid(-1, NULL, 0);
 		(*p)--;
 	}
-	printf("%d\n", *n);
+	for (b=1; b < a; b++) {
+		n += check[b];
+	}
+	printf("%d\n", n);
 	return 0;
 }
